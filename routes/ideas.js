@@ -1,82 +1,67 @@
 const express = require("express");
-
+const Idea = require("../modules/Idea");
 const router = express.Router();
 
-const ideas = [
-  {
-    id: 1,
-    text: "Positive NewsLetter, a newsletter that only shares positive, upliftinh nees",
-    tag: "Technology",
-    username: "TonyStark",
-    date: "2022-01-02",
-  },
-  {
-    id: 2,
-    text: "Inspirational Insights, a newsletter that brings motivational stories and insights",
-    tag: "Inspiration",
-    username: "OptimistExplorer",
-    date: "2022-01-03",
-  },
-  {
-    id: 3,
-    text: "Nature's Delight, a newsletter celebrating the beauty of the natural world",
-    tag: "Nature",
-    username: "GreenDreamer",
-    date: "2022-01-04",
-  },
-  {
-    id: 4,
-    text: "Heartwarming Chronicles, a newsletter sharing touching and heartwarming tales",
-    tag: "Emotion",
-    username: "EmpathyAdvocate",
-    date: "2022-01-05",
-  },
-];
-
 // get ideas
-router.get("/", (req, res) => {
-  res.json({ succes: true, data: ideas });
+router.get("/", async (req, res) => {
+  try {
+    const ideas = await Idea.find();
+    res.json({ succes: true, data: ideas });
+  } catch (error) {
+    res.status(500).json({ succes: false, error: "Something went wrong" });
+  }
 });
 // get single idea
-router.get("/:id", (req, res) => {
-  const idea = ideas.find((idea) => idea.id === +req.params.id);
-  if (!idea) {
-    return res.status(404).json({ succes: false, error: "Not found" });
+router.get("/:id", async (req, res) => {
+  try {
+    const idea = await Idea.findById(req.params.id);
+    res.json({ succes: true, data: idea });
+  } catch (error) {
+    res.status(500).json({ succes: false, error: "Something went wrong" });
   }
-  res.json({ succes: true, data: idea });
 });
 // Add an idea
-router.post("/", (req, res) => {
-  const idea = {
-    id: ideas.length + 1,
+router.post("/", async (req, res) => {
+  const idea = new Idea({
     text: req.body.text,
     tag: req.body.tag,
     username: req.body.username,
-    date: new Date().toISOString().slice(0, 10),
-  };
-  ideas.push(idea);
-  res.json({ succes: true, data: idea });
+  });
+
+  try {
+    const saveIdea = await idea.save();
+    res.json({ succes: true, data: saveIdea });
+  } catch (error) {
+    res.status(500).json({ succes: false, error: "Something went wrong" });
+  }
 });
 
 //update idea
-router.put("/:id", (req, res) => {
-  const idea = ideas.find((idea) => idea.id === +req.params.id);
-  if (!idea) {
-    return res.status(404).json({ succes: false, error: "Not found" });
+router.put("/:id", async (req, res) => {
+  try {
+    const updatedIdea = await Idea.findByIdAndUpdate(
+      req.params.id,
+      {
+        $set: {
+          text: req.body.text,
+          tag: req.body.tag,
+        },
+      },
+      { new: true }
+    );
+    res.json({ succes: true, data: updatedIdea });
+  } catch (error) {
+    res.status(500).json({ succes: false, error: "Something went wrong" });
   }
-  idea.text = req.body.text || idea.text;
-  idea.tag = req.body.tag || idea.tag;
-  res.json({ succes: true, data: idea });
 });
 // delet idea
-router.delete("/:id", (req, res) => {
-  const idea = ideas.find((idea) => idea.id === +req.params.id);
-  if (!idea) {
-    return res.status(404).json({ succes: false, error: "Not found" });
+router.delete("/:id", async (req, res) => {
+  try {
+    await Idea.findByIdAndDelete(req.params.id);
+    res.json({ succes: true, data: {} });
+  } catch (error) {
+    res.status(500).json({ succes: false, error: "Something went wrong" });
   }
-  const index = ideas.indexOf(idea);
-  ideas.splice(index, 1);
-  res.json({ succes: true, data: {} });
 });
 
 module.exports = router;
